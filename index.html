@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>منيو | الوطنية للمشويات</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS فقط (تم إزالة React لسرعة الصاروخ) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- خطوط جوجل (كايرو) -->
@@ -13,10 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- مكتبات React و PapaParse (لقراءة جوجل شيت) -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- مكتبة سحب البيانات من جوجل شيت -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
@@ -33,190 +30,186 @@
 </head>
 <body class="antialiased text-slate-200 selection:bg-orange-500 selection:text-white">
 
-    <div id="root"></div>
+    <!-- شاشة التحميل -->
+    <div id="loading" class="min-h-screen flex items-center justify-center">
+        <div class="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        const MenuApp = () => {
-            const [menuData, setMenuData] = useState({});
-            const [activeCategory, setActiveCategory] = useState('');
-            const [isLoading, setIsLoading] = useState(true);
-
-            // ==========================================
-            // حط لينك الـ CSV بتاع جوجل شيت بتاعك هنا 👇
-            // ==========================================
-            const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOM9nzn0uIPprW46bakhWbf9Fv2PjuRzwH3JqYzIrLlxl6BpgCZYNrmP_Ec0zzjSwHC-XcRmQIX0yp/pub?gid=1312559413&single=true&output=csv';
-
-            useEffect(() => {
-                // سحب البيانات من الشيت
-                Papa.parse(sheetCSVUrl, {
-                    download: true,
-                    header: true,
-                    complete: (results) => {
-                        const data = results.data;
-                        const formattedMenu = {};
-                        
-                        data.forEach(row => {
-                            const category = row['القسم'];
-                            const name = row['الاسم'];
-                            const price = row['السعر'];
-                            
-                            if (category && name && price) {
-                                if (!formattedMenu[category]) {
-                                    formattedMenu[category] = [];
-                                }
-                                formattedMenu[category].push({ name, price });
-                            }
-                        });
-
-                        setMenuData(formattedMenu);
-                        const categories = Object.keys(formattedMenu);
-                        if (categories.length > 0) {
-                            setActiveCategory(categories[0]);
-                        }
-                        setIsLoading(false);
-                    },
-                    error: (error) => {
-                        console.error("Error fetching data:", error);
-                        setIsLoading(false);
-                    }
-                });
-            }, []);
-
-            const categories = Object.keys(menuData);
-
-            if (isLoading) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center">
-                        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                );
-            }
-
-            if (categories.length === 0) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center text-xl text-slate-400">
-                        تأكد من وضع رابط الـ CSV الصحيح للـ Google Sheet
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen pb-28 relative">
-                    <div className="fixed top-0 right-0 w-72 h-72 bg-orange-600/10 rounded-full blur-[90px] pointer-events-none z-0"></div>
-                    
-                    {/* Header */}
-                    <header className="relative pt-10 pb-6 px-4 text-center z-10">
-                        <div className="inline-block p-1 rounded-xl bg-gradient-to-br from-orange-500/30 to-red-500/5 mb-3">
-                            <div className="bg-[#09090b] rounded-lg px-6 py-3 border border-orange-500/20">
-                                <h1 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 mb-1 drop-shadow-sm pb-2 leading-relaxed">
-                                    الوطنية
-                                </h1>
-                                <p className="text-sm md:text-base text-orange-200/80 font-semibold tracking-widest">
-                                    الشرقي على أصوله
-                                </p>
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* Navigation Tabs */}
-                    <div className="sticky top-0 z-50 backdrop-blur-md bg-[#09090b]/80 border-y border-white/5 shadow-2xl mb-6">
-                        <div className="container mx-auto px-2">
-                            <div className="flex overflow-x-auto hide-scrollbar py-3 gap-2 md:justify-center items-center px-4">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => setActiveCategory(cat)}
-                                        className={`flex-shrink-0 px-5 py-2 rounded-full text-sm md:text-base font-bold transition-all duration-300 ${
-                                            activeCategory === cat
-                                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/25 scale-105'
-                                                : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
-                                        }`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            <div className="flex justify-center items-center gap-2 pb-2 text-orange-500/70 text-xs font-semibold">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                                    <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
-                                </svg>
-                                <span>اسحب لتصفح باقي الأقسام</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" className="animate-bounce-h">
-                                    <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Menu Content */}
-                    <main className="container mx-auto px-4 max-w-3xl relative z-10">
-                        <div className="bg-[#121214] rounded-2xl p-5 md:p-8 shadow-xl border border-white/5">
-                            
-                            <div className="text-center mb-6 flex items-center justify-center gap-3">
-                                <div className="h-px bg-gradient-to-l from-orange-500/0 to-orange-500/50 w-10 md:w-20"></div>
-                                <h2 className="text-xl md:text-2xl font-black text-white">
-                                    {activeCategory}
-                                </h2>
-                                <div className="h-px bg-gradient-to-r from-orange-500/0 to-orange-500/50 w-10 md:w-20"></div>
-                            </div>
-                            
-                            <div className="grid gap-2.5 md:gap-3">
-                                {menuData[activeCategory] && menuData[activeCategory].map((item, index) => (
-                                    <div 
-                                        key={index} 
-                                        className="flex justify-between items-center p-3.5 md:p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-orange-500/20 transition-all duration-300 group"
-                                    >
-                                        <div className="flex-1 pr-2">
-                                            <h3 className="text-base md:text-lg font-bold text-slate-200 group-hover:text-orange-400 transition-colors">
-                                                {item.name}
-                                            </h3>
-                                        </div>
-                                        
-                                        <div className="flex-shrink-0 price-badge flex items-baseline gap-1 bg-orange-500/10 px-3.5 py-1.5 rounded-lg border border-orange-500/20 transition-all duration-300">
-                                            <span className="text-lg md:text-xl font-black text-orange-400">{item.price}</span>
-                                            <span className="text-xs font-semibold text-orange-400/70">ج.م</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </main>
-
-                    {/* Footer */}
-                    <footer className="fixed bottom-0 w-full backdrop-blur-xl bg-[#09090b]/90 border-t border-white/5 z-50">
-                        <div className="container mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
-                                <p className="text-slate-400 text-xs md:text-sm font-semibold">
-                                    جميع الأسعار يضاف إليها 14% ضريبة
-                                </p>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-xs md:text-sm">
-                                <span className="text-slate-500 font-medium">
-                                    By <span className="text-slate-200 font-bold">Ahmed Assaf</span>
-                                </span>
-                                <span className="text-slate-700">|</span>
-                                <a 
-                                    href="https://ahmedassaf-eco.vercel.app" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-600/30 hover:border-blue-600 px-3 py-1.5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1.5 group"
-                                >
-                                    Portfolio
-                                </a>
-                            </div>
-                        </div>
-                    </footer>
+    <!-- محتوى الموقع (مخفي لحد ما الداتا تيجي) -->
+    <div id="main-content" class="hidden min-h-screen pb-28 relative">
+        <div class="fixed top-0 right-0 w-72 h-72 bg-orange-600/10 rounded-full blur-[90px] pointer-events-none z-0"></div>
+        
+        <!-- Header -->
+        <header class="relative pt-10 pb-6 px-4 text-center z-10">
+            <div class="inline-block p-1 rounded-xl bg-gradient-to-br from-orange-500/30 to-red-500/5 mb-3">
+                <div class="bg-[#09090b] rounded-lg px-6 py-3 border border-orange-500/20">
+                    <h1 class="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 mb-1 drop-shadow-sm pb-2 leading-relaxed">
+                        الوطنية
+                    </h1>
+                    <p class="text-sm md:text-base text-orange-200/80 font-semibold tracking-widest">
+                        الشرقي على أصوله
+                    </p>
                 </div>
-            );
-        };
+            </div>
+        </header>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MenuApp />);
+        <!-- Navigation Tabs -->
+        <div class="sticky top-0 z-50 backdrop-blur-md bg-[#09090b]/80 border-y border-white/5 shadow-2xl mb-6">
+            <div class="container mx-auto px-2">
+                <div id="tabs-container" class="flex overflow-x-auto hide-scrollbar py-3 gap-2 md:justify-center items-center px-4">
+                    <!-- Tabs سيتم إضافتها هنا بالجافاسكريبت -->
+                </div>
+                
+                <div class="flex justify-center items-center gap-2 pb-2 text-orange-500/70 text-xs font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                        <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                    </svg>
+                    <span>اسحب لتصفح باقي الأقسام</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="animate-bounce-h">
+                        <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Menu Content -->
+        <main class="container mx-auto px-4 max-w-3xl relative z-10">
+            <div class="bg-[#121214] rounded-2xl p-5 md:p-8 shadow-xl border border-white/5">
+                
+                <div class="text-center mb-6 flex items-center justify-center gap-3">
+                    <div class="h-px bg-gradient-to-l from-orange-500/0 to-orange-500/50 w-10 md:w-20"></div>
+                    <h2 id="category-title" class="text-xl md:text-2xl font-black text-white">
+                        <!-- اسم القسم هنا -->
+                    </h2>
+                    <div class="h-px bg-gradient-to-r from-orange-500/0 to-orange-500/50 w-10 md:w-20"></div>
+                </div>
+                
+                <div id="items-container" class="grid gap-2.5 md:gap-3">
+                    <!-- الأصناف سيتم إضافتها هنا -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="fixed bottom-0 w-full backdrop-blur-xl bg-[#09090b]/90 border-t border-white/5 z-50">
+            <div class="container mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                    <p class="text-slate-400 text-xs md:text-sm font-semibold">
+                        جميع الأسعار يضاف إليها 14% ضريبة
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-2 text-xs md:text-sm">
+                    <span class="text-slate-500 font-medium">
+                        By <span class="text-slate-200 font-bold">Ahmed Assaf</span>
+                    </span>
+                    <span class="text-slate-700">|</span>
+                    <a href="https://ahmedassaf-eco.vercel.app" target="_blank" rel="noopener noreferrer" class="bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white border border-blue-600/30 hover:border-blue-600 px-3 py-1.5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1.5 group">
+                        Portfolio
+                    </a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- كود الجافاسكريبت السريع -->
+    <script>
+        // ==========================================
+        // حط لينك الـ CSV بتاع جوجل شيت بتاعك هنا 👇
+        // ==========================================
+        const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOM9nzn0uIPprW46bakhWbf9Fv2PjuRzwH3JqYzIrLlxl6BpgCZYNrmP_Ec0zzjSwHC-XcRmQIX0yp/pub?gid=1312559413&single=true&output=csv';
+        
+        let menuData = {};
+        let activeCategory = '';
+
+        function initApp() {
+            // كود كسر الكاش عشان يقرا أحدث سعر فوراً
+            const noCacheUrl = sheetCSVUrl + (sheetCSVUrl.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+
+            Papa.parse(noCacheUrl, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const data = results.data;
+                    
+                    data.forEach(row => {
+                        const category = row['القسم'];
+                        const name = row['الاسم'];
+                        const price = row['السعر'];
+                        
+                        if (category && name && price) {
+                            if (!menuData[category]) {
+                                menuData[category] = [];
+                            }
+                            menuData[category].push({ name, price });
+                        }
+                    });
+
+                    const categories = Object.keys(menuData);
+                    if (categories.length > 0) {
+                        activeCategory = categories[0];
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('main-content').classList.remove('hidden');
+                        renderTabs();
+                        renderItems();
+                    }
+                }
+            });
+        }
+
+        function setActiveCategory(cat) {
+            activeCategory = cat;
+            renderTabs();
+            renderItems();
+        }
+
+        function renderTabs() {
+            const categories = Object.keys(menuData);
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                const isActive = activeCategory === cat;
+                
+                btn.className = `flex-shrink-0 px-5 py-2 rounded-full text-sm md:text-base font-bold transition-all duration-300 ${
+                    isActive
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/25 scale-105'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                }`;
+                btn.textContent = cat;
+                btn.onclick = () => setActiveCategory(cat);
+                
+                container.appendChild(btn);
+            });
+        }
+
+        function renderItems() {
+            document.getElementById('category-title').textContent = activeCategory;
+            const container = document.getElementById('items-container');
+            container.innerHTML = '';
+            
+            menuData[activeCategory].forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-3.5 md:p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-orange-500/20 transition-all duration-300 group';
+                div.innerHTML = `
+                    <div class="flex-1 pr-2">
+                        <h3 class="text-base md:text-lg font-bold text-slate-200 group-hover:text-orange-400 transition-colors">
+                            ${item.name}
+                        </h3>
+                    </div>
+                    <div class="flex-shrink-0 price-badge flex items-baseline gap-1 bg-orange-500/10 px-3.5 py-1.5 rounded-lg border border-orange-500/20 transition-all duration-300">
+                        <span class="text-lg md:text-xl font-black text-orange-400">${item.price}</span>
+                        <span class="text-xs font-semibold text-orange-400/70">ج.م</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // تشغيل التطبيق أول ما الصفحة تفتح
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
