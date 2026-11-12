@@ -13,34 +13,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <!-- مكتبات React -->
+    <!-- مكتبات React و PapaParse (لقراءة جوجل شيت) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-        body {
-            font-family: 'Cairo', sans-serif;
-            background-color: #09090b;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .price-badge:hover {
-            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
-        }
-        /* أنيميشن التلميح */
+        body { font-family: 'Cairo', sans-serif; background-color: #09090b; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .price-badge:hover { box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
         @keyframes bounce-horizontal {
             0%, 100% { transform: translateX(0); }
             50% { transform: translateX(-5px); }
         }
-        .animate-bounce-h {
-            animation: bounce-horizontal 2s infinite;
-        }
+        .animate-bounce-h { animation: bounce-horizontal 2s infinite; }
     </style>
 </head>
 <body class="antialiased text-slate-200 selection:bg-orange-500 selection:text-white">
@@ -48,44 +36,71 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         const MenuApp = () => {
-            const [activeCategory, setActiveCategory] = useState('السلطات');
+            const [menuData, setMenuData] = useState({});
+            const [activeCategory, setActiveCategory] = useState('');
+            const [isLoading, setIsLoading] = useState(true);
 
-            const menuData = {
-                'السلطات': [
-                    { name: 'سلطه خضراء', price: '٢٠' },
-                    { name: 'ثوميه / بابا غنوج / زبادي', price: '٢٠' },
-                    { name: 'كول سلو / حمص / مايونيز', price: '٢٥' },
-                    { name: 'طبق ميكس صغير', price: '٣٠' },
-                    { name: 'طبق ميكس كبير', price: '٤٠' },
-                    { name: 'جبنه قديمه', price: '٣٠' },
-                ],
-                'النشويات': [
-                    { name: 'أرز بسمتي / أرز كاري', price: '٧٠' },
-                    { name: 'أرز بالخلطه / فته ساده', price: '٦٥' },
-                    { name: 'أرز ساده', price: '٥٥' },
-                    { name: 'برام أرز معمر', price: '٧٠' },
-                    { name: 'سوبر (أرز ومحاشي وجلاش)', price: '٩٠' },
-                ],
-                'المكرونات': [
-                    { name: 'مبكبكه لحمه', price: '٢٢٥' },
-                    { name: 'مبكبكه سجق', price: '١٨٥' },
-                    { name: 'مكرونه وايت صوص + بانيه', price: '٢٥٠' },
-                    { name: 'طبق فراخ بانيه (مع أرز)', price: '٢٤٥' },
-                    { name: 'مكرونه نجرسكو', price: '١٦٥' },
-                    { name: 'مكرونه اسباجتي بلونيز / فرن', price: '٩٠' },
-                ],
-                'الشوربة والخضار': [
-                    { name: 'شوربه بهاريز', price: '١٦٠' },
-                    { name: 'شوربة كوارع', price: '١١٠' },
-                    { name: 'شوربه كريمه فراخ', price: '١١٠' },
-                    { name: 'برام خضار باللحمة', price: '٢٣٥' },
-                ],
-            };
+            // ==========================================
+            // حط لينك الـ CSV بتاع جوجل شيت بتاعك هنا 👇
+            // ==========================================
+            const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOM9nzn0uIPprW46bakhWbf9Fv2PjuRzwH3JqYzIrLlxl6BpgCZYNrmP_Ec0zzjSwHC-XcRmQIX0yp/pub?gid=1312559413&single=true&output=csv';
+
+            useEffect(() => {
+                // سحب البيانات من الشيت
+                Papa.parse(sheetCSVUrl, {
+                    download: true,
+                    header: true,
+                    complete: (results) => {
+                        const data = results.data;
+                        const formattedMenu = {};
+                        
+                        data.forEach(row => {
+                            const category = row['القسم'];
+                            const name = row['الاسم'];
+                            const price = row['السعر'];
+                            
+                            if (category && name && price) {
+                                if (!formattedMenu[category]) {
+                                    formattedMenu[category] = [];
+                                }
+                                formattedMenu[category].push({ name, price });
+                            }
+                        });
+
+                        setMenuData(formattedMenu);
+                        const categories = Object.keys(formattedMenu);
+                        if (categories.length > 0) {
+                            setActiveCategory(categories[0]);
+                        }
+                        setIsLoading(false);
+                    },
+                    error: (error) => {
+                        console.error("Error fetching data:", error);
+                        setIsLoading(false);
+                    }
+                });
+            }, []);
 
             const categories = Object.keys(menuData);
+
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                );
+            }
+
+            if (categories.length === 0) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center text-xl text-slate-400">
+                        تأكد من وضع رابط الـ CSV الصحيح للـ Google Sheet
+                    </div>
+                );
+            }
 
             return (
                 <div className="min-h-screen pb-28 relative">
@@ -95,7 +110,6 @@
                     <header className="relative pt-10 pb-6 px-4 text-center z-10">
                         <div className="inline-block p-1 rounded-xl bg-gradient-to-br from-orange-500/30 to-red-500/5 mb-3">
                             <div className="bg-[#09090b] rounded-lg px-6 py-3 border border-orange-500/20">
-                                {/* تم إضافة pb-2 و leading-relaxed لمنع قص حرف الواو */}
                                 <h1 className="text-4xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 mb-1 drop-shadow-sm pb-2 leading-relaxed">
                                     الوطنية
                                 </h1>
@@ -125,7 +139,6 @@
                                 ))}
                             </div>
                             
-                            {/* تلميح السحب للعميل */}
                             <div className="flex justify-center items-center gap-2 pb-2 text-orange-500/70 text-xs font-semibold">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                                     <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
@@ -151,7 +164,7 @@
                             </div>
                             
                             <div className="grid gap-2.5 md:gap-3">
-                                {menuData[activeCategory].map((item, index) => (
+                                {menuData[activeCategory] && menuData[activeCategory].map((item, index) => (
                                     <div 
                                         key={index} 
                                         className="flex justify-between items-center p-3.5 md:p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-orange-500/20 transition-all duration-300 group"
